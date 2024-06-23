@@ -1,18 +1,48 @@
-.App {
+.app-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   background-color: #000;
+  overflow: hidden;
 }
 
-.grid {
-  display: inline-block;
-  border: 1px solid #333;
+.grid-container {
+  display: grid;
+  grid-template-rows: repeat(20, 1fr);
+  gap: 1px;
+  border: 2px solid #333;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 1px;
+}
+
+/* .cell {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+} */
+
+.animate {
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .cell {
