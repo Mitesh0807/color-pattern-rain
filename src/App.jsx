@@ -3,8 +3,11 @@ import "./App.css";
 
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 20;
-const MIN_DROP_LENGTH = 4;
-const MAX_DROP_LENGTH = 8;
+const MIN_SQUARE_SIZE = 0;
+const MAX_SQUARE_SIZE = Math.max(
+  Math.ceil(GRID_HEIGHT / 2),
+  Math.ceil(GRID_WIDTH / 2)
+);
 const COLOR_CHANGE_INTERVAL = 3000;
 
 function getRandomColor() {
@@ -14,51 +17,66 @@ function getRandomColor() {
 
 function App() {
   const [grid, setGrid] = useState(
-    Array(GRID_HEIGHT)
-      .fill()
-      .map(() => Array(GRID_WIDTH).fill(null))
+    Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(null))
   );
   const [currentColor, setCurrentColor] = useState(getRandomColor());
   const [isAnimating, setIsAnimating] = useState(false);
+  const [squareSize, setSquareSize] = useState(MIN_SQUARE_SIZE);
+
+  const centerY = Math.floor(GRID_HEIGHT / 2);
+  const centerX = Math.floor(GRID_WIDTH / 2);
 
   useEffect(() => {
-    const dropInterval = setInterval(() => {
+    const updateInterval = setInterval(() => {
       setGrid((prevGrid) => {
-        const newGrid = prevGrid.map((row) => [...row]);
-        for (let y = GRID_HEIGHT - 1; y > 0; y--) {
-          for (let x = 0; x < GRID_WIDTH; x++) {
-            newGrid[y][x] = newGrid[y - 1][x];
+        const newGrid = prevGrid.map(row => [...row]);
+        
+        // Clear the previous square
+        if (squareSize > 0) {
+          for (let i = -squareSize + 1; i <= squareSize - 1; i++) {
+            if (centerY + squareSize - 1 < GRID_HEIGHT) newGrid[centerY + squareSize - 1][centerX + i] = null;
+            if (centerY - squareSize + 1 >= 0) newGrid[centerY - squareSize + 1][centerX + i] = null;
+            if (centerX + squareSize - 1 < GRID_WIDTH) newGrid[centerY + i][centerX + squareSize - 1] = null;
+            if (centerX - squareSize + 1 >= 0) newGrid[centerY + i][centerX - squareSize + 1] = null;
           }
         }
-        for (let x = 0; x < GRID_WIDTH; x++) {
-          if (!newGrid[0][x] && Math.random() < 0.1) {
-            const length = Math.floor(
-              Math.random() * (MAX_DROP_LENGTH - MIN_DROP_LENGTH + 1)
-            ) + MIN_DROP_LENGTH;
-            newGrid[0][x] = { length, position: 0 };
-          } else if (newGrid[0][x]) {
-            newGrid[0][x] = {
-              ...newGrid[0][x],
-              position: newGrid[0][x].position + 1,
-            };
-            if (newGrid[0][x].position >= newGrid[0][x].length) {
-              newGrid[0][x] = null;
-            }
-          }
+
+        // Draw the new square
+        for (let i = -squareSize; i <= squareSize; i++) {
+          if (centerY + squareSize < GRID_HEIGHT) newGrid[centerY + squareSize][centerX + i] = { position: 0 };
+          if (centerY - squareSize >= 0) newGrid[centerY - squareSize][centerX + i] = { position: 0 };
+          if (centerX + squareSize < GRID_WIDTH) newGrid[centerY + i][centerX + squareSize] = { position: 0 };
+          if (centerX - squareSize >= 0) newGrid[centerY + i][centerX - squareSize] = { position: 0 };
         }
+
         return newGrid;
       });
-    }, 100);
+
+      setSquareSize((prevSize) => {
+        // Check if the square has reached either the last row or last column
+        if (
+          centerY + prevSize >= GRID_HEIGHT - 1 ||
+          centerY - prevSize <= 0 ||
+          centerX + prevSize >= GRID_WIDTH - 1 ||
+          centerX - prevSize <= 0
+        ) {
+          // Reset the grid and square size
+          setGrid(Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(null)));
+          return MIN_SQUARE_SIZE;
+        }
+        return prevSize + 1;
+      });
+    }, 500);
 
     const colorInterval = setInterval(() => {
       setCurrentColor(getRandomColor());
     }, COLOR_CHANGE_INTERVAL);
 
     return () => {
-      clearInterval(dropInterval);
+      clearInterval(updateInterval);
       clearInterval(colorInterval);
     };
-  }, []);
+  }, [centerX, centerY, squareSize]);
 
   const handleTouch = () => {
     setCurrentColor(getRandomColor());
@@ -68,29 +86,29 @@ function App() {
 
   return (
     <div className="content">
-    <div 
-      className={`app-container ${isAnimating ? 'animate' : ''}`} 
-      onTouchStart={handleTouch}
-      onClick={handleTouch}
-    >
-      <div className="grid-container">
-        {grid.map((row, y) => (
-          <div key={y} className="row">
-            {row.map((cell, x) => (
-              <div
-                key={x}
-                className={`cell ${cell ? 'active' : ''}`}
-                style={{
-                  backgroundColor: cell
-                    ? `hsl(${currentColor.hue}, ${currentColor.saturation}%, ${Math.max(20, currentColor.lightness - (cell.position * 5))}%)`
-                    : 'transparent',
-                }}
-              />
-            ))}
-          </div>
-        ))}
+      <div 
+        className={`app-container ${isAnimating ? 'animate' : ''}`} 
+        onTouchStart={handleTouch}
+        onClick={handleTouch}
+      >
+        <div className="grid-container">
+          {grid.map((row, y) => (
+            <div key={y} className="row">
+              {row.map((cell, x) => (
+                <div
+                  key={x}
+                  className={`cell ${cell ? 'active' : ''}`}
+                  style={{
+                    backgroundColor: cell
+                      ? `hsl(${currentColor.hue}, ${currentColor.saturation}%, ${currentColor.lightness}%)`
+                      : 'transparent',
+                  }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
